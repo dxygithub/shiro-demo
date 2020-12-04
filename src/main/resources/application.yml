@@ -1,0 +1,18 @@
+server:
+  port: 8081
+
+spring:
+  datasource:
+    username: root
+    password: Duxiaoyu@147852
+    url: jdbc:mysql://139.224.81.29:3306/jwt_test?useUnicode=true&useSSL=false&characterEncoding=utf8&serverTimezone=UTC
+    type: com.alibaba.druid.pool.DruidDataSource
+  freemarker:
+    suffix: .ftl
+
+mybatis-max:
+  type-aliases-package: com.dxy.shirodemo.entity
+
+logging:
+  level:
+    com.dxy.shirodemo.mapper: debug
