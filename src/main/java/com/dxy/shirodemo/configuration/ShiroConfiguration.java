@@ -2,14 +2,15 @@ package com.dxy.shirodemo.configuration;
 
 import com.dxy.shirodemo.filter.MyPermissionAuthorizationFilter;
 import com.dxy.shirodemo.filter.MyRolesAuthorizationFilter;
+import com.dxy.shirodemo.service.ShiroService;
 import org.apache.shiro.authc.credential.HashedCredentialsMatcher;
-import org.apache.shiro.mgt.DefaultSecurityManager;
 import org.apache.shiro.mgt.SecurityManager;
 import org.apache.shiro.spring.LifecycleBeanPostProcessor;
 import org.apache.shiro.spring.security.interceptor.AuthorizationAttributeSourceAdvisor;
 import org.apache.shiro.spring.web.ShiroFilterFactoryBean;
 import org.apache.shiro.web.mgt.DefaultWebSecurityManager;
 import org.springframework.aop.framework.autoproxy.DefaultAdvisorAutoProxyCreator;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
@@ -29,6 +30,8 @@ public class ShiroConfiguration {
 
     private final int EXPIRE = 1800;
 
+    @Autowired
+    private ShiroService shiroService;
 
     /**
      * 配置shiro过滤器链
@@ -58,6 +61,8 @@ public class ShiroConfiguration {
         filterChainDefinitionMap.put("/user/doLogin", "anon");// 登录请求匿名访问
         // 配置自定义过滤器链：myRoles[admin],myPermission[user_list] 按照顺序调用执行
         filterChainDefinitionMap.put("/user/queryUserList","authc,myRoles[admin],myPermission[user_list_test]");
+
+        // TODO 动态加载全部权限
         filterChainDefinitionMap.put("/**", "authc");// 其他请求均需要认证，优先级最低，故放到最后，也只能放到最后
         filterFactoryBean.setFilterChainDefinitionMap(filterChainDefinitionMap);
 
