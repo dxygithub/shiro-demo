@@ -2,7 +2,6 @@ package com.dxy.shirodemo.filter;
 
 import cn.hutool.json.JSONUtil;
 import org.apache.shiro.subject.Subject;
-import org.apache.shiro.web.filter.authz.AuthorizationFilter;
 import org.apache.shiro.web.filter.authz.RolesAuthorizationFilter;
 
 import javax.servlet.ServletRequest;
