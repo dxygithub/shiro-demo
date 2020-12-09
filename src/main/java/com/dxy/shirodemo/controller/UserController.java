@@ -1,10 +1,14 @@
 package com.dxy.shirodemo.controller;
 
+import com.dxy.shirodemo.entity.Role;
 import com.dxy.shirodemo.entity.User;
+import com.dxy.shirodemo.service.RolePermissionService;
+import com.dxy.shirodemo.service.ShiroService;
 import com.dxy.shirodemo.service.UserService;
 import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.authc.*;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
+import org.apache.shiro.spring.web.ShiroFilterFactoryBean;
 import org.apache.shiro.subject.Subject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -33,6 +37,15 @@ public class UserController {
     @Autowired
     private UserService userService;
 
+    @Autowired
+    private RolePermissionService rolePermissionService;
+
+    @Autowired
+    private ShiroService shiroService;
+
+    @Autowired
+    private ShiroFilterFactoryBean factoryBean;
+
     @GetMapping("/login")
     @ResponseBody
     public String login() {
@@ -53,7 +66,7 @@ public class UserController {
 
     @PostMapping("/doLogin")
     @ResponseBody
-    public ResponseEntity doLogin(String account, String pwd, HttpSession session) {
+    public ResponseEntity doLogin(String account, String pwd) {
         Map<String, Object> result = new LinkedHashMap<>(16);
         try {
             UsernamePasswordToken token = new UsernamePasswordToken(account, pwd);
@@ -94,5 +107,17 @@ public class UserController {
     public String logout() {
         SecurityUtils.getSubject().logout();
         return "redirect:/user/login";
+    }
+
+    @PostMapping("/addRole")
+    @ResponseBody
+    public ResponseEntity addRole(String roleName,String roleDetails,String permissionIds){
+        Role role=new Role();
+        role.setRole(roleName);
+        role.setDescription(roleDetails);
+        rolePermissionService.addRole(role,permissionIds);
+
+        shiroService.updatePermission(factoryBean,null,null);
+        return ResponseEntity.ok().build();
     }
 }

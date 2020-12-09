@@ -9,6 +9,7 @@ import org.apache.shiro.spring.LifecycleBeanPostProcessor;
 import org.apache.shiro.spring.security.interceptor.AuthorizationAttributeSourceAdvisor;
 import org.apache.shiro.spring.web.ShiroFilterFactoryBean;
 import org.apache.shiro.web.mgt.DefaultWebSecurityManager;
+import org.apache.shiro.web.session.mgt.DefaultWebSessionManager;
 import org.springframework.aop.framework.autoproxy.DefaultAdvisorAutoProxyCreator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -28,11 +29,6 @@ import java.util.Map;
 @Configuration
 public class ShiroConfiguration {
 
-    private final int EXPIRE = 1800;
-
-    @Autowired
-    private ShiroService shiroService;
-
     /**
      * 配置shiro过滤器链
      *
@@ -40,36 +36,40 @@ public class ShiroConfiguration {
      * @return
      */
     @Bean
-    public ShiroFilterFactoryBean shiroFilterFactoryBean(SecurityManager securityManager) {
+    public ShiroFilterFactoryBean shiroFilterFactoryBean(SecurityManager securityManager, ShiroService shiroService) {
         ShiroFilterFactoryBean filterFactoryBean = new ShiroFilterFactoryBean();
         filterFactoryBean.setSecurityManager(securityManager);
 
-        // 配置自定义过滤器
+        // 自定义过滤器
         Map<String, Filter> customFilterMap = new LinkedHashMap<>();
         customFilterMap.put("myRoles", new MyRolesAuthorizationFilter());
         customFilterMap.put("myPermission", new MyPermissionAuthorizationFilter());
         filterFactoryBean.setFilters(customFilterMap);
 
-        // 配置shiro内置过滤器链： 从上到下，优先级排序：从高到低，按顺序执行，所以此处使用LinkedHashMap配置有序
-        Map<String, String> filterChainDefinitionMap = new LinkedHashMap<>();
-        filterChainDefinitionMap.put("/static/**", "anon"); // 静态资源匿名访问
-        filterChainDefinitionMap.put("/bootstrap/**", "anon"); // 静态资源匿名访问
-        filterChainDefinitionMap.put("/css/**", "anon"); // 静态资源匿名访问
-        filterChainDefinitionMap.put("/js/**", "anon"); // 静态资源匿名访问
-        filterChainDefinitionMap.put("/img/**", "anon"); // 静态资源匿名访问
-        filterChainDefinitionMap.put("/user/login", "anon");// 登录页面匿名访问
-        filterChainDefinitionMap.put("/user/doLogin", "anon");// 登录请求匿名访问
-        // 配置自定义过滤器链：myRoles[admin],myPermission[user_list] 按照顺序调用执行
-        filterChainDefinitionMap.put("/user/queryUserList","authc,myRoles[admin],myPermission[user_list_test]");
+        // 检查是否有
 
         // TODO 动态加载全部权限
-        filterChainDefinitionMap.put("/**", "authc");// 其他请求均需要认证，优先级最低，故放到最后，也只能放到最后
-        filterFactoryBean.setFilterChainDefinitionMap(filterChainDefinitionMap);
+        Map<String, String> dynamicPermissionMap = shiroService.loadFilterChainDefinitionMap();
+        filterFactoryBean.setFilterChainDefinitionMap(dynamicPermissionMap);
 
         filterFactoryBean.setLoginUrl("/user/login"); // 登录页面
         filterFactoryBean.setSuccessUrl("/index");// 登录成功后的跳转页面
         filterFactoryBean.setUnauthorizedUrl("/user/error");// 验证失败后的跳转路径
         return filterFactoryBean;
+    }
+
+    /**
+     * 配置shiro安全管理器
+     *
+     * @return
+     */
+    @Bean
+    public SecurityManager securityManager() {
+        DefaultWebSecurityManager securityManager = new DefaultWebSecurityManager();
+        securityManager.setRealm(shiroRealm());
+        securityManager.setSessionManager(customSessionManager());
+        securityManager.setCacheManager(redisCacheManager());
+        return securityManager;
     }
 
     /**
@@ -85,15 +85,46 @@ public class ShiroConfiguration {
     }
 
     /**
-     * 配置shiro安全管理器
+     * 自定义CustomSessionManager
      *
      * @return
      */
     @Bean
-    public SecurityManager securityManager() {
-        DefaultWebSecurityManager securityManager = new DefaultWebSecurityManager();
-        securityManager.setRealm(shiroRealm());
-        return securityManager;
+    public CustomSessionManager customSessionManager() {
+        CustomSessionManager customSessionManager = new CustomSessionManager();
+        customSessionManager.setSessionDAO(redisSessionDao());
+        return customSessionManager;
+    }
+
+    /**
+     * 自定义RedisSessionDao
+     *
+     * @return
+     */
+    @Bean
+    public RedisSessionDao redisSessionDao() {
+        return new RedisSessionDao();
+    }
+
+    /**
+     * 自定义RedisCacheManager
+     * @return
+     */
+    @Bean
+    public RedisCacheManager redisCacheManager(){
+        return new RedisCacheManager();
+    }
+
+    /**
+     * 配置DefaultWebSessionManager
+     *
+     * @return
+     */
+    // @Bean
+    public DefaultWebSessionManager defaultWebSessionManager() {
+        DefaultWebSessionManager defaultWebSessionManager = new DefaultWebSessionManager();
+        defaultWebSessionManager.setSessionDAO(redisSessionDao());
+        return defaultWebSessionManager;
     }
 
     /**

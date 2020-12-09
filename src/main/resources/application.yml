@@ -9,6 +9,11 @@ spring:
     type: com.alibaba.druid.pool.DruidDataSource
   freemarker:
     suffix: .ftl
+  redis:
+    host: 192.168.10.233
+    port: 6379
+    timeout: 1000
+    database: 0
 
 mybatis-max:
   type-aliases-package: com.dxy.shirodemo.entity

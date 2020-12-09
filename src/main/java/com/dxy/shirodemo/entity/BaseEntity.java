@@ -7,6 +7,8 @@ import cloud.gouyiba.core.typehandler.IEnumTypeHandler;
 import com.dxy.shirodemo.enumeration.DelFlagEnum;
 import lombok.Data;
 
+import java.io.Serializable;
+
 /**
  * @ClassName BaseEntity 公用字段实体类
  * @Author duxiaoyu
@@ -14,7 +16,7 @@ import lombok.Data;
  * @Version 1.0
  */
 @Data
-public class BaseEntity {
+public class BaseEntity implements Serializable {
 
     private Integer id;
 
