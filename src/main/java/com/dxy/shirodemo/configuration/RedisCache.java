@@ -3,6 +3,7 @@ package com.dxy.shirodemo.configuration;
 import com.dxy.shirodemo.utils.JedisUtil;
 import org.apache.shiro.cache.Cache;
 import org.apache.shiro.cache.CacheException;
+import org.apache.shiro.cache.MapCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,7 +28,7 @@ public class RedisCache<K, V> implements Cache<K, V> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RedisCache.class);
 
-    private final static String PERMISSION_CACHE_PREFIX = "shiro_permission:";
+    private final String PERMISSION_CACHE_PREFIX = "shiro_permission:";
 
     private byte[] getKey(K key) {
         if (key instanceof String) {
@@ -39,15 +40,25 @@ public class RedisCache<K, V> implements Cache<K, V> {
     @Autowired
     private JedisUtil jedisUtil;
 
+    @Autowired
+    private MapCache<K, V> mapCache;
+
     @Override
     public V get(K k) throws CacheException {
-        LOGGER.info("查询缓存中的权限数据 ...");
         if (Objects.isNull(k)) {
             throw new NullPointerException("redisCache key is null ...");
         }
+        // 查询mapCache的一级缓存数据
+        V v = mapCache.get(k);
+        if(Objects.nonNull(v)){
+            LOGGER.info("查询mapCache缓存中的权限数据 ...");
+            return v;
+        }
+
         byte[] key = getKey(k);
         byte[] value = jedisUtil.get(key);
         if (value != null && value.length > 0) {
+            LOGGER.info("查询redis缓存中的权限数据 ...");
             return (V) SerializationUtils.deserialize(value);
         }
         return null;
@@ -59,6 +70,9 @@ public class RedisCache<K, V> implements Cache<K, V> {
         if (Objects.isNull(k) || Objects.isNull(v)) {
             throw new NullPointerException("redisCache key or value is null ...");
         }
+        // 向mapCache保存一级缓存数据
+        mapCache.put(k, v);
+
         byte[] key = getKey(k);
         byte[] value = SerializationUtils.serialize(v);
         jedisUtil.put(key, value, 600);

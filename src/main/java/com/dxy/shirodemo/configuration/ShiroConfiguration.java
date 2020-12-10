@@ -4,6 +4,8 @@ import com.dxy.shirodemo.filter.MyPermissionAuthorizationFilter;
 import com.dxy.shirodemo.filter.MyRolesAuthorizationFilter;
 import com.dxy.shirodemo.service.ShiroService;
 import org.apache.shiro.authc.credential.HashedCredentialsMatcher;
+import org.apache.shiro.authz.AuthorizationInfo;
+import org.apache.shiro.cache.MapCache;
 import org.apache.shiro.mgt.SecurityManager;
 import org.apache.shiro.spring.LifecycleBeanPostProcessor;
 import org.apache.shiro.spring.security.interceptor.AuthorizationAttributeSourceAdvisor;
@@ -19,6 +21,7 @@ import org.springframework.context.annotation.DependsOn;
 import javax.servlet.Filter;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @ClassName ShiroConfiguration
@@ -30,7 +33,7 @@ import java.util.Map;
 public class ShiroConfiguration {
 
     /**
-     * 配置shiro过滤器链
+     * 配置shiro过滤器工厂
      *
      * @param securityManager
      * @return
@@ -113,6 +116,11 @@ public class ShiroConfiguration {
     @Bean
     public RedisCacheManager redisCacheManager(){
         return new RedisCacheManager();
+    }
+
+    @Bean
+    public MapCache<Object, AuthorizationInfo> mapCache(){
+        return new MapCache<>("shiro",new ConcurrentHashMap<>());
     }
 
     /**
